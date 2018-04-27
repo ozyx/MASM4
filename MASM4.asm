@@ -37,28 +37,65 @@
     strHeader4 BYTE "<4> Edit string. Given an index #, replace old string w/ new string. Allocate/De-allocate as needed.",10,10,0
     strHeader5 BYTE "<5> String search. Regardless of case, return all strings that match the substring given.",10,10,0
     strHeader6 BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
+    strPrompt1 BYTE "Enter a selection (1 - 7): ",0
 
-    .code                       ; begin code
+    strInput BYTE ?
+    numInput DWORD 0
 
-;###################################################
-; main PROC
-;   The main driver of the program. Display menu
-;   and get user's choice
-;###################################################
-main PROC                                               ;
-    call Clrscr
-    INVOKE putstring, ADDR strHeader0
-    INVOKE putstring, ADDR strHeader1
-    INVOKE putstring, ADDR strHeader2
-    INVOKE putstring, ADDR strHeader3
-    INVOKE putstring, ADDR strHeader4
-    INVOKE putstring, ADDR strHeader5
-    INVOKE putstring, ADDR strHeader6
+;***********************
+;    MACRO PrintMenu   *
+; Prints the main menu *
+;***********************
+PrintMenu MACRO
+    call Clrscr                         ; Clear the screen
+    INVOKE putstring, ADDR strHeader0   ; Print menu
+    INVOKE putstring, ADDR strHeader1   ;
+    INVOKE putstring, ADDR strHeader2   ;
+    INVOKE putstring, ADDR strHeader3   ;
+    INVOKE putstring, ADDR strHeader4   ;
+    INVOKE putstring, ADDR strHeader5   ;
+    INVOKE putstring, ADDR strHeader6   ;
+endm
 
-    INVOKE ExitProcess,0
+    .code                               ; begin code
 
+;**************************************************
+; main PROC                                       *
+;   The main driver of the program. Display menu  *
+;   and get user's choice.                        *
+;**************************************************
+main PROC
+_start:
+    PrintMenu                           ; Print the menu
+    
+    INVOKE putstring, ADDR strPrompt1   ; Prompt for a menu choice
+    INVOKE getstring, ADDR strInput,1   ; Get a menu choice from user
+    INVOKE ascint32, ADDR strInput      ; Convert to int for comparison
+    MOV numInput, eax                   ; Store in eax
 
-main ENDP                                               ;
+    cmp eax, 1                          ; View all strings
+    je _start
 
-END main               	        ; end program
+    cmp eax, 2                          ; Add a string
+    je _start
 
+    cmp eax, 3                          ; Delete a string
+    je _start
+
+    cmp eax, 4                          ; Edit a string
+    je _start
+
+    cmp eax, 5                          ; String search
+    je _start
+
+    cmp eax, 6                          ; Save file
+    je _start
+
+    cmp eax, 7                          ; Quit
+    je _end
+
+_end:
+    INVOKE ExitProcess,0                ; Exit gracefully
+
+main ENDP
+END main               	                ; End program
