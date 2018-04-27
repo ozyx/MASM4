@@ -75,7 +75,12 @@ CreateHeap MACRO
         HEAP_ZERO_MEMORY, 
         HEAP_START, 
         HEAP_MAX  ; Create heap
-    mov hHeap, eax                              ; Retrieve handle
+    .IF eax == NULL
+        mWrite "HeapCreate failed"               ; Print error
+        jmp _end                                ; Terminate. (TODO: Grow heap?)
+    .ELSE
+        mov hHeap, eax                         ; Store base address in pArray
+    .ENDIF
     pop eax                                     ; Restore eax
 endm
 
