@@ -74,22 +74,22 @@ _start:
     INVOKE ascint32, ADDR strInput      ; Convert to int for comparison
     MOV numInput, eax                   ; Store in eax
 
-    cmp eax, 1                          ; View all strings
+    cmp numInput, 1                          ; View all strings
     je _start
 
-    cmp eax, 2                          ; Add a string
+    cmp numInput, 2                          ; Add a string
     je _addString
 
-    cmp eax, 3                          ; Delete a string
+    cmp numInput, 3                          ; Delete a string
     je _start
 
-    cmp eax, 4                          ; Edit a string
+    cmp numInput, 4                          ; Edit a string
     je _start
 
-    cmp eax, 5                          ; String search
+    cmp numInput, 5                          ; String search
     je _start
 
-    cmp eax, 6                          ; Save file
+    cmp numInput, 6                          ; Save file
     je _start
 
     jmp _end
