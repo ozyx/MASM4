@@ -12,6 +12,7 @@
     .stack 100h
 
     INCLUDE ..\Irvine\Irvine32.inc  ; Holds Irvine Prototypes
+    INCLUDE ..\Irvine\Macros.inc    ; Holds Irvine Macros (because why not)
 
     ;**************
     ;* PROTOTYPES *
@@ -32,7 +33,7 @@
     ;menu prompt
     strHeader0 BYTE "MASM4 TEXT EDITOR",10,"Data Structure Memory Consumption: ",0
     strHeader1 BYTE " bytes",10,"<1> View all strings",10,10,0
-    strHeader2 BYTE "<2> Add string",10,"    <a> from Keyboard",10,"    <b> from File. Static file named input.txt",10,10,0
+    strHeader2 BYTE "<2> Add string",10,"    <a> from Keyboard",10,"    <b> from File (Static file named input.txt)",10,10,0
     strHeader3 BYTE "<3> Delete string. Given an index #, delete the string and de-allocate memory.",10,10,0
     strHeader4 BYTE "<4> Edit string. Given an index #, replace old string w/ new string. Allocate/De-allocate as needed.",10,10,0
     strHeader5 BYTE "<5> String search. Regardless of case, return all strings that match the substring given.",10,10,0
@@ -48,13 +49,13 @@
 ;***********************
 PrintMenu MACRO
     call Clrscr                         ; Clear the screen
-    INVOKE putstring, ADDR strHeader0   ; Print menu
-    INVOKE putstring, ADDR strHeader1   ;
-    INVOKE putstring, ADDR strHeader2   ;
-    INVOKE putstring, ADDR strHeader3   ;
-    INVOKE putstring, ADDR strHeader4   ;
-    INVOKE putstring, ADDR strHeader5   ;
-    INVOKE putstring, ADDR strHeader6   ;
+    mWriteString strHeader0             ; Print menu
+    mWriteString strHeader1             ;
+    mWriteString strHeader2             ;
+    mWriteString strHeader3             ;
+    mWriteString strHeader4             ;
+    mWriteString strHeader5             ;
+    mWriteString strHeader6             ;
 endm
 
     .code                               ; begin code
@@ -68,7 +69,7 @@ main PROC
 _start:
     PrintMenu                           ; Print the menu
     
-    INVOKE putstring, ADDR strPrompt1   ; Prompt for a menu choice
+    mWriteString strPrompt1             ; Prompt for a menu choice
     INVOKE getstring, ADDR strInput,1   ; Get a menu choice from user
     INVOKE ascint32, ADDR strInput      ; Convert to int for comparison
     MOV numInput, eax                   ; Store in eax
@@ -77,7 +78,7 @@ _start:
     je _start
 
     cmp eax, 2                          ; Add a string
-    je _start
+    je _addString
 
     cmp eax, 3                          ; Delete a string
     je _start
@@ -91,8 +92,24 @@ _start:
     cmp eax, 6                          ; Save file
     je _start
 
-    cmp eax, 7                          ; Quit
-    je _end
+    jmp _end
+
+
+_addString:
+    call Crlf
+ 
+    mWrite "Enter a selection (a - b): ",0
+    INVOKE getstring, ADDR strInput,1
+    cmp strInput, "a"
+    je _fromKeyboard
+    cmp strInput, "b"
+    je _fromFile
+    jmp _start
+
+_fromKeyboard:
+    jmp _start
+_fromFile:
+    jmp _start
 
 _end:
     INVOKE ExitProcess,0                ; Exit gracefully
