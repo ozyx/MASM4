@@ -26,22 +26,26 @@
     getch         PROTO Near32 stdcall  ;returns character in the AL register *
     putch         PROTO Near32 stdcall, bChar:byte
 
+    HEAP_START = 0
+    HEAP_MAX = 4000000000
 
     .data
-    memoryConsumption DWORD 0
+    totalMem DWORD 0
 
     ;menu prompt
-    strHeader0 BYTE "MASM4 TEXT EDITOR",10,"Data Structure Memory Consumption: ",0
-    strHeader1 BYTE " bytes",10,"<1> View all strings",10,10,0
-    strHeader2 BYTE "<2> Add string",10,"    <a> from Keyboard",10,"    <b> from File (Static file named input.txt)",10,10,0
-    strHeader3 BYTE "<3> Delete string. Given an index #, delete the string and de-allocate memory.",10,10,0
-    strHeader4 BYTE "<4> Edit string. Given an index #, replace old string w/ new string. Allocate/De-allocate as needed.",10,10,0
-    strHeader5 BYTE "<5> String search. Regardless of case, return all strings that match the substring given.",10,10,0
-    strHeader6 BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
-    strPrompt1 BYTE "Enter a selection (1 - 7): ",0
+    strHeader0   BYTE "MASM4 TEXT EDITOR",10,"Data Structure Memory Consumption: ",0
+    strHeader1   BYTE " bytes",10,"<1> View all strings",10,10,0
+    strHeader2   BYTE "<2> Add string",10,"    <a> from Keyboard",10,"    <b> from File (Static file named input.txt)",10,10,0
+    strHeader3   BYTE "<3> Delete string. Given an index #, delete the string and de-allocate memory.",10,10,0
+    strHeader4   BYTE "<4> Edit string. Given an index #, replace old string w/ new string. Allocate/De-allocate as needed.",10,10,0
+    strHeader5   BYTE "<5> String search. Regardless of case, return all strings that match the substring given.",10,10,0
+    strHeader6   BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
+    strPrompt1   BYTE "Enter a selection (1 - 7): ",0
 
-    strInput BYTE ?
-    numInput DWORD 0
+    strInput     BYTE ?
+    numInput    DWORD ?
+    hHeap      HANDLE ?
+    pArray      DWORD ?
 
 ;***********************
 ;    MACRO PrintMenu   *
@@ -58,6 +62,29 @@ PrintMenu MACRO
     mWriteString strHeader6             ;
 endm
 
+;**********************************
+;         MACRO CreateHeap        *
+; Create heap and retrieve handle *
+;**********************************
+CreateHeap MACRO
+    push eax                                    ; Preserve eax
+    INVOKE HeapCreate, 0, HEAP_START, HEAP_MAX  ; Create heap
+    mov hHeap, eax                            ; Retrieve handle
+    pop eax                                     ; Restore eax
+endm
+
+AllocMem MACRO handle:REQ, bytes:REQ
+    push eax
+    INVOKE HeapAlloc, handle, HEAP_ZERO_MEMORY, bytes
+    .IF eax == NULL
+        mWrite "HeapAlloc failed"
+        jmp _end
+    .ELSE
+        mov pArray, eax
+    .ENDIF
+    pop eax
+endm
+
     .code                               ; begin code
 
 ;**************************************************
@@ -66,6 +93,7 @@ endm
 ;   and get user's choice.                        *
 ;**************************************************
 main PROC
+    CreateHeap                          ; Create heap and store handle in hHeap
 _start:
     PrintMenu                           ; Print the menu
     
