@@ -30,9 +30,17 @@
     HEAP_MAX   = 400000000
     STRING_MAX = 512
 
+    ListNode STRUCT
+        ALIGN DWORD
+        strLine DWORD ?                     ; Address to line
+        dwNext  DWORD ?                     ; Address to next node
+    ListNode ENDS
+
     .data
-    totalMem    DWORD 0
-    strTotalMem  BYTE "00000000",0
+
+    
+    totalMem    DWORD 0                     ; Total memory allocated on the heap
+    strTotalMem  BYTE "00000000",0          ; Total memory converted to a string for display in menu
     ;menu prompt
     strHeader0   BYTE "MASM4 TEXT EDITOR",10,"Data Structure Memory Consumption: ",0
     strHeader1   BYTE " bytes",10,"<1> View all strings",10,10,0
@@ -43,19 +51,24 @@
     strHeader6   BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
     strPrompt1   BYTE "Enter a selection (1 - 7): ",0
 
-    strInput     BYTE ?
     strBuffer    BYTE STRING_MAX DUP(?)
     charIn       BYTE ?
     hHeap      HANDLE ?
     pArray      DWORD ?
-    dLength     DWORD ?
+    dwLength    DWORD ?
+    dwHead      DWORD 0                     ; Address to current head of linked list
+
+AddNode MACRO lineAddr
+    ListNode<lineAddr, head>
+    ; mov head, 
+endm
 
 ;***********************
 ;    MACRO PrintMenu   *
 ; Prints the main menu *
 ;***********************
 PrintMenu MACRO
-    call Clrscr                         ; Clear the screen
+    ; call Clrscr                         ; Clear the screen
     mWriteString strHeader0             ; Print menu
     mWriteString strTotalMem            ; Print total bytes
     mWriteString strHeader1             ;
@@ -88,7 +101,7 @@ AllocMem MACRO bytes:REQ
     push eax                                    ; Preserve eax
     INVOKE HeapAlloc,                           ; Allocate memory on the heap
             hHeap, 
-            HEAP_ZERO_MEMORY, dLength
+            HEAP_ZERO_MEMORY, dwLength
     .IF eax == NULL
         mWrite "HeapAlloc failed"               ; Print error
         jmp done                                ; Terminate. (TODO: Grow heap?)
@@ -108,6 +121,8 @@ endm
 ;**************************************************
 main PROC
 _setup:
+    ListNode<0,0>
+    call WriteDec
     CreateHeap                        ; Create heap and store handle in hHeap
 _mainmenu:
     PrintMenu                         ; Print the menu
@@ -150,10 +165,10 @@ _fromKeyboard:
     call Crlf                                    ; Print newline
     mWrite "Enter a string: "                    ; Prompt user
     mReadString strBuffer                        ; Read string from user into strBuffer
-    mov dLength, eax                             ; Store length in dLength
-    cmp dLength, 0                               ; Is it an empty string?
+    mov dwLength, eax                             ; Store length in dwLength
+    cmp dwLength, 0                               ; Is it an empty string?
     je _mainmenu                                 ; If so, jump back to menu
-    AllocMem dLength                             ; Otherwise, allocate memory
+    AllocMem dwLength                             ; Otherwise, allocate memory
     jmp _mainmenu                                ; Go to main menu
 
 _fromFile:
