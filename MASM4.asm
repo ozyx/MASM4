@@ -44,7 +44,8 @@
     strPrompt1   BYTE "Enter a selection (1 - 7): ",0
 
     strInput     BYTE ?
-    numInput    DWORD ?
+    strBuffer    BYTE STRING_MAX DUP(?)
+    charIn       BYTE ?
     hHeap      HANDLE ?
     pArray      DWORD ?
     dLength     DWORD ?
@@ -75,12 +76,7 @@ CreateHeap MACRO
         HEAP_ZERO_MEMORY, 
         HEAP_START, 
         HEAP_MAX  ; Create heap
-    .IF eax == NULL
-        mWrite "HeapCreate failed"               ; Print error
-        jmp _end                                ; Terminate. (TODO: Grow heap?)
-    .ELSE
-        mov hHeap, eax                         ; Store base address in pArray
-    .ENDIF
+    mov hHeap, eax                              ; Retrieve handle
     pop eax                                     ; Restore eax
 endm
 
@@ -95,14 +91,15 @@ AllocMem MACRO bytes:REQ
             HEAP_ZERO_MEMORY, dLength
     .IF eax == NULL
         mWrite "HeapAlloc failed"               ; Print error
-        jmp _end                                ; Terminate. (TODO: Grow heap?)
+        jmp done                                ; Terminate. (TODO: Grow heap?)
     .ELSE
         mov pArray, eax                         ; Store base address in pArray
     .ENDIF
+done:
     pop eax                                     ; Restore eax
 endm
 
-    .code                               ; begin code
+    .code                                       ; begin code
 
 ;**************************************************
 ; main PROC                                       *
@@ -111,59 +108,54 @@ endm
 ;**************************************************
 main PROC
 _setup:
-    CreateHeap                          ; Create heap and store handle in hHeap
+    CreateHeap                        ; Create heap and store handle in hHeap
 _mainmenu:
-    PrintMenu                           ; Print the menu
+    PrintMenu                         ; Print the menu
     
-    mWriteString strPrompt1             ; Prompt for a menu choice
-    INVOKE getstring, ADDR strInput,1   ; Get a menu choice from user
-    INVOKE ascint32, ADDR strInput      ; Convert to int for comparison
-    MOV numInput, eax                   ; Store in eax
+    mWriteString strPrompt1           ; Prompt for a menu choice
+    call ReadChar                     ; Get choice from user in al
+    MOV charIn, al                    ; Store user choice in charIn
 
-    cmp numInput, 1                     ; View all strings
+    cmp charIn, "1"                   ; View all strings
     je _mainmenu
 
-    cmp numInput, 2                     ; Add a string
+    cmp charIn, "2"                   ; Add a string
     je _addString
 
-    cmp numInput, 3                     ; Delete a string
+    cmp charIn, "3"                   ; Delete a string
     je _mainmenu
 
-    cmp numInput, 4                     ; Edit a string
+    cmp charIn, "4"                   ; Edit a string
     je _mainmenu
 
-    cmp numInput, 5                     ; String search
+    cmp charIn, "5"                   ; String search
     je _mainmenu
 
-    cmp numInput, 6                     ; Save file
+    cmp charIn, "6"                   ; Save file
     je _mainmenu
 
     jmp _end
 
-
 _addString:
     call Crlf                                    ; Print newline
     mWrite "Enter a selection (a - b): "         ; Prompt user
-    INVOKE getstring, ADDR strInput,1            ; Get user choice
-    cmp strInput, "a"                            ; If a
+    call ReadChar                                ; Get user choice in al
+    cmp al, "a"                                  ; If a
     je _fromKeyboard                             ; Get user input from keyboard
-    cmp strInput, "b"                            ; If b
+    cmp al, "b"                                  ; If b
     je _fromFile                                 ; Read from file
     jmp _mainmenu                                ; Anything else, go back to main menu
 
 _fromKeyboard:
     call Crlf                                    ; Print newline
     mWrite "Enter a string: "                    ; Prompt user
-    INVOKE getstring, ADDR strInput, STRING_MAX  ; Get string in strInput, MAX = 512 BYTES
-    mov ebx, OFFSET strInput                     ; Store string in eax
-    push ebx                                     ; Pass string to String_length
-    call String_length                           ; Get length of string in eax
-    add esp, 4                                   ; Clean up stack
+    mReadString strBuffer                        ; Read string from user into strBuffer
     mov dLength, eax                             ; Store length in dLength
     cmp dLength, 0                               ; Is it an empty string?
     je _mainmenu                                 ; If so, jump back to menu
     AllocMem dLength                             ; Otherwise, allocate memory
     jmp _mainmenu                                ; Go to main menu
+
 _fromFile:
     jmp _mainmenu
 
