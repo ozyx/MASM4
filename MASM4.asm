@@ -17,7 +17,7 @@
     ;**************
     ;* PROTOTYPES *
     ;**************
-    ExitProcess   PROTO Near32 stdcall, dwExitCode:dword
+    ExitProcess       PROTO Near32 stdcall, dwExitCode:dword
 
     HEAP_START = 0
     HEAP_MAX   = 400000000
@@ -50,7 +50,6 @@
     hHeap      HANDLE ?
     pArray      DWORD ?
     dwLength    DWORD ?
-    dwHead      DWORD 0                     ; Address to current head of linked list
     dwFlags     DWORD HEAP_ZERO_MEMORY      ; Flags to use for HeapCreate, HeapAlloc, etc
     dwBytes     DWORD 0                     ; Bytes to allocate memory
 
@@ -59,16 +58,25 @@
     currNod     DWORD ?                     ; Pointer to the current node
     prevNod     DWORD 0                     ; Pointer to the previous node
     nextNod     DWORD 0                     ; Pointer to the next node
+    toPrint      BYTE ?
 
-    thisNode ListNode{}                     ; ListNode
+    thisNode ListNode{}                     ; ListNode object
 
+;*****************************
+;       MACRO InitList       *
+; Initialize the linked list *
+;*****************************
 InitList MACRO
     mov dwBytes, SIZEOF ListNode            ; Allocate memory for a ListNode
     AddNode dwBytes                         ; Call AddNode
     mov head, eax                           ; Store address of first node in head
-    mov currNod, eax                        ; Current node is head
 endm
 
+;***********************
+;    MACRO AddNode     *
+; Add a new node to    *
+; the list             *
+;***********************
 AddNode MACRO bytes:REQ
     push ebx                                ; Preserve ebx
     AllocMem bytes                          ; Allocate a certain number of bytes
@@ -137,6 +145,10 @@ _setup:
     InitList                          ; Initialize the linked list
 
 _mainmenu:
+
+    mov eax, tail                     ; Move tail to eax
+    mov currNod, eax                  ; Update current node
+
     PrintMenu                         ; Print the menu
     
     mWriteString strPrompt1           ; Prompt for a menu choice
@@ -176,11 +188,22 @@ _addString:
 _fromKeyboard:
     call Crlf                                    ; Print newline
     mWrite "Enter a string: "                    ; Prompt user
-    mReadString strBuffer                        ; Read string from user into strBuffer
-    mov dwLength, eax                             ; Store length in dwLength
-    cmp dwLength, 0                               ; Is it an empty string?
+    mReadString thisNode.strLine                 ; Read string from user into strBuffer
+    mov dwLength, eax                            ; Store length in dwLength
+    cmp dwLength, 0                              ; Is it an empty string?
     je _mainmenu                                 ; If so, jump back to menu
-    AllocMem dwLength                             ; Otherwise, allocate memory
+    AddNode dwBytes                              ; Otherwise, add a new node
+    mov eax, tail                                ; Move tail to eax
+    mov thisNode.dwNext, eax                     ; The current node's next-ptr will point to tail
+
+    mov esi, OFFSET thisNode                     ; Move address of this node to esi
+    mov edi, currNod                             ; Move currNod to edi
+    
+    add edi, SIZEOF thisNode.strLine             ; Make room for new node
+    INVOKE Str_copy, ADDR thisNode.strLine, edi  ; Copy the line into the new node object
+    mov eax, (ListNode PTR [esi]).dwNext         ; Move next node address into eax
+
+    mov [edi], eax                               ; Next node address into edi
     jmp _mainmenu                                ; Go to main menu
 
 _fromFile:
