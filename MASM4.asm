@@ -53,6 +53,7 @@
     dwLength    DWORD ?
     dwFlags     DWORD HEAP_ZERO_MEMORY      ; Flags to use for HeapCreate, HeapAlloc, etc
     dwBytes     DWORD 0                     ; Bytes to allocate memory
+    lineNum     DWORD 0
 
     head        DWORD ?                     ; Pointer to first node in list
     tail        DWORD ?                     ; Pointer to last node in list
@@ -87,24 +88,14 @@ AddNode MACRO bytes:REQ
 endm
 
 PrintNode MACRO
-    mov edi, head
-    mov ebx, 00h
-
-_displaystart:
-    cmp [edi+sumOfEntryFields],ebx
-    je _mainmenu
-
-    mWrite "DISPLAYING NODE: "
-    mov eax, [edi]
-    mov prevNod, eax
-    mov edx, edi
-    call WriteString
-    call Crlf
-
-    add edi, SIZEOF thisNode.strLine
-    mov edi, [edi]
-    mov currNod, edi
-    jmp _displaystart
+    mov eax, lineNum                        ; Prepare to print line number
+    call WriteDec                           ; Print line number
+    mWrite ": "                             ; Print ": " after line number
+    mov eax, [edi]                          ; Move previous node to eax
+    mov prevNod, eax                        ; Store previous node in prevNod
+    mov edx, edi                            ; Prepare to print node's lineStr
+    call WriteString                        ; Print the line
+    call Crlf                               ; Print a newline
 endm
 
 ;***********************
@@ -195,16 +186,29 @@ _mainmenu:
     cmp dwChoice, 6                   ; Save file
     je _mainmenu
 
-    cmp dwChoice, 7
+    cmp dwChoice, 7                   ; Quit
     je _end
 
     jmp _mainmenu
 
 _print:
-    ; call Clrscr
-    ; call Crlf
-    PrintNode
-    jmp _mainmenu
+    call Clrscr                                  ; Clear the screen
+    call Crlf                                    ; Print a newline
+    mov lineNum, 1                               ; Initialize line number to 1
+    mov edi, head                                ; Put address of first node in edi
+    mov ebx, 00h                                 ; Initialize ebx to 0
+_displaystart:
+    cmp [edi+sumOfEntryFields],ebx               ; Check if we are at the end of the list
+    je _displaydone                              ; If so, we're done
+    PrintNode                                    ; Otherwise, print it
+    inc lineNum                                  ; Increment line number
+    add edi, SIZEOF thisNode.strLine             ; Go to the next node in the list
+    mov edi, [edi]                               ; Dereference and store in edi
+    mov currNod, edi                             ; Store this as currNod
+    jmp _displaystart                            ; Loop
+_displaydone:
+    call WaitMsg                                 ; Display the wait message
+    jmp _mainmenu                                ; Back to main menu
 
 _addString:
     call Crlf                                    ; Print newline
@@ -242,8 +246,8 @@ _fromFile:
     jmp _mainmenu
 
 _end:
-    INVOKE HeapDestroy, hHeap           ; Destroy the heap!!
-    INVOKE ExitProcess,0                ; Exit gracefully
+    INVOKE HeapDestroy, hHeap                    ; Destroy the heap!!
+    INVOKE ExitProcess,0                         ; Exit gracefully
 
 main ENDP
-END main               	        ; end program
+END main               	                         ; end program
