@@ -47,7 +47,7 @@
     strHeader6   BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
     strPrompt1   BYTE "Enter a selection (1 - 7): ",0
 
-    charIn       BYTE ?
+    dwChoice    DWORD ?
     hHeap      HANDLE ?
     pArray      DWORD ?
     dwLength    DWORD ?
@@ -174,28 +174,31 @@ _mainmenu:
     PrintMenu                         ; Print the menu
     
     mWriteString strPrompt1           ; Prompt for a menu choice
-    call ReadChar                     ; Get choice from user in al
-    MOV charIn, al                    ; Store user choice in charIn
+    call ReadDec                      ; Get choice from user in al
+    MOV dwChoice, eax                 ; Store user choice in dwChoice
 
-    cmp charIn, "1"                   ; View all strings
+    cmp dwChoice, 1                   ; View all strings
     je _print
 
-    cmp charIn, "2"                   ; Add a string
+    cmp dwChoice, 2                   ; Add a string
     je _addString
 
-    cmp charIn, "3"                   ; Delete a string
+    cmp dwChoice, 3                   ; Delete a string
     je _mainmenu
 
-    cmp charIn, "4"                   ; Edit a string
+    cmp dwChoice, 4                   ; Edit a string
     je _mainmenu
 
-    cmp charIn, "5"                   ; String search
+    cmp dwChoice, 5                   ; String search
     je _mainmenu
 
-    cmp charIn, "6"                   ; Save file
+    cmp dwChoice, 6                   ; Save file
     je _mainmenu
 
-    jmp _end
+    cmp dwChoice, 7
+    je _end
+
+    jmp _mainmenu
 
 _print:
     ; call Clrscr
