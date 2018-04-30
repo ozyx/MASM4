@@ -24,8 +24,8 @@
     STRING_MAX = 512
 
     ListNode STRUCT
-        ALIGN   BYTE
-        strLine BYTE STRING_MAX DUP(0)      ; Address to line
+        ALIGN    BYTE
+        strLine  BYTE STRING_MAX DUP(0)      ; Address to line
         ALIGN   DWORD
         dwNext  DWORD 0                     ; Address to next node
     ListNode ENDS
@@ -47,7 +47,6 @@
     strHeader6   BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
     strPrompt1   BYTE "Enter a selection (1 - 7): ",0
 
-    strBuffer    BYTE STRING_MAX DUP(?)
     charIn       BYTE ?
     hHeap      HANDLE ?
     pArray      DWORD ?
@@ -60,7 +59,6 @@
     currNod     DWORD ?                     ; Pointer to the current node
     prevNod     DWORD 0                     ; Pointer to the previous node
     nextNod     DWORD 0                     ; Pointer to the next node
-    toPrint      BYTE ?
 
     thisNode ListNode{}                     ; ListNode object
 
@@ -71,7 +69,7 @@
 InitList MACRO
     mov dwBytes, SIZEOF ListNode            ; Allocate memory for a ListNode
     AddNode dwBytes                         ; Call AddNode
-    mov eax, pArray
+    mov eax, pArray                         ; Store initial address in eax
     mov head, eax                           ; Store address of first node in head
 endm
 
@@ -91,11 +89,11 @@ endm
 PrintNode MACRO
     mov edi, head
     mov ebx, 00h
-display:
-    ; cmp [edi+sumOfEntryFields], ebx
-    ; je _mainmenu
-    ; call WaitMsg
-    ; add edi, 4
+
+_displaystart:
+    cmp [edi+sumOfEntryFields],ebx
+    je _mainmenu
+
     mWrite "DISPLAYING NODE: "
     mov eax, [edi]
     mov prevNod, eax
@@ -103,11 +101,10 @@ display:
     call WriteString
     call Crlf
 
-    ; add edi, SIZEOF thisNode.strLine
-    ; mov edi, [edi]
-    ; mov currNod, edi
-
-    ; jmp display
+    add edi, SIZEOF thisNode.strLine
+    mov edi, [edi]
+    mov currNod, edi
+    jmp _displaystart
 endm
 
 ;***********************
@@ -115,7 +112,7 @@ endm
 ; Prints the main menu *
 ;***********************
 PrintMenu MACRO
-    ; call Clrscr                         ; Clear the screen
+    ; call Clrscr                       ; Clear the screen
     mWriteString strHeader0             ; Print menu
     mWriteString strTotalMem            ; Print total bytes
     mWriteString strHeader1             ;
@@ -201,8 +198,8 @@ _mainmenu:
     jmp _end
 
 _print:
-    call Crlf
-    ; mWrite "CURRENT NODE: "
+    ; call Clrscr
+    ; call Crlf
     PrintNode
     jmp _mainmenu
 
@@ -223,12 +220,6 @@ _fromKeyboard:
     mov dwLength, eax                            ; Store length in dwLength
     cmp dwLength, 0                              ; Is it an empty string?
     je _mainmenu                                 ; If so, jump back to menu
-    
-    ; push edx
-    ; mov edx, OFFSET thisNode.strLine
-    ; add edx, dwLength
-    ; mov BYTE PTR [edx], 0
-    ; pop edx
 
     AddNode dwBytes                              ; Otherwise, add a new node
     mov eax, tail                                ; Move tail to eax
@@ -237,9 +228,8 @@ _fromKeyboard:
     mov esi, OFFSET thisNode                     ; Move address of this node to esi
     mov edi, currNod                             ; Move currNod to edi
     
-    ; add edi, SIZEOF thisNode.strLine             ; Make room for new node
     INVOKE Str_copy, ADDR thisNode.strLine, edi  ; Copy the line into the new node object
-    ; add edi, SIZEOF thisNode.strLine
+    add edi, SIZEOF thisNode.strLine             ; Add size of strLine to edi
     mov eax, (ListNode PTR [esi]).dwNext         ; Move next node address into eax
 
     mov [edi], eax                               ; Next node address into edi
