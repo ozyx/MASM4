@@ -18,22 +18,16 @@
     ;* PROTOTYPES *
     ;**************
     ExitProcess   PROTO Near32 stdcall, dwExitCode:dword
-    ascint32      PROTO Near32 stdcall, lpStringOfNumericChars:dword
-    intasc32      PROTO Near32 stdcall, lpStringToHold:dword, dVal:dword
-    getstring     PROTO Near32 stdcall, lpStringToGet:dword, dlength:dword
-    putstring     PROTO Near32 stdcall, lpStringToPrint:dword
-    getche        PROTO Near32 stdcall  ;returns character in the AL register *
-    getch         PROTO Near32 stdcall  ;returns character in the AL register *
-    putch         PROTO Near32 stdcall, bChar:byte
 
     HEAP_START = 0
     HEAP_MAX   = 400000000
     STRING_MAX = 512
 
     ListNode STRUCT
-        ALIGN DWORD
-        strLine DWORD ?                     ; Address to line
-        dwNext  DWORD ?                     ; Address to next node
+        ALIGN   BYTE
+        strLine BYTE STRING_MAX DUP(0)      ; Address to line
+        ALIGN   DWORD
+        dwNext  DWORD 0                     ; Address to next node
     ListNode ENDS
 
     .data
@@ -57,10 +51,30 @@
     pArray      DWORD ?
     dwLength    DWORD ?
     dwHead      DWORD 0                     ; Address to current head of linked list
+    dwFlags     DWORD HEAP_ZERO_MEMORY      ; Flags to use for HeapCreate, HeapAlloc, etc
+    dwBytes     DWORD 0                     ; Bytes to allocate memory
 
-AddNode MACRO lineAddr
-    ListNode<lineAddr, head>
-    ; mov head, 
+    head        DWORD ?                     ; Pointer to first node in list
+    tail        DWORD ?                     ; Pointer to last node in list
+    currNod     DWORD ?                     ; Pointer to the current node
+    prevNod     DWORD 0                     ; Pointer to the previous node
+    nextNod     DWORD 0                     ; Pointer to the next node
+
+    thisNode ListNode{}                     ; ListNode
+
+InitList MACRO
+    mov dwBytes, SIZEOF ListNode            ; Allocate memory for a ListNode
+    AddNode dwBytes                         ; Call AddNode
+    mov head, eax                           ; Store address of first node in head
+    mov currNod, eax                        ; Current node is head
+endm
+
+AddNode MACRO bytes:REQ
+    push ebx                                ; Preserve ebx
+    AllocMem bytes                          ; Allocate a certain number of bytes
+    mov ebx,  pArray                        ; Move memory address to ebx
+    mov tail, ebx                           ; Store the new address for tail
+    pop ebx                                 ; Restore ebx
 endm
 
 ;***********************
@@ -68,7 +82,7 @@ endm
 ; Prints the main menu *
 ;***********************
 PrintMenu MACRO
-    ; call Clrscr                         ; Clear the screen
+    call Clrscr                         ; Clear the screen
     mWriteString strHeader0             ; Print menu
     mWriteString strTotalMem            ; Print total bytes
     mWriteString strHeader1             ;
@@ -86,7 +100,7 @@ endm
 CreateHeap MACRO
     push eax                                    ; Preserve eax
     INVOKE HeapCreate, 
-        HEAP_ZERO_MEMORY, 
+        dwFlags, 
         HEAP_START, 
         HEAP_MAX  ; Create heap
     mov hHeap, eax                              ; Retrieve handle
@@ -101,14 +115,12 @@ AllocMem MACRO bytes:REQ
     push eax                                    ; Preserve eax
     INVOKE HeapAlloc,                           ; Allocate memory on the heap
             hHeap, 
-            HEAP_ZERO_MEMORY, dwLength
+            dwFlags, bytes
     .IF eax == NULL
         mWrite "HeapAlloc failed"               ; Print error
-        jmp done                                ; Terminate. (TODO: Grow heap?)
     .ELSE
         mov pArray, eax                         ; Store base address in pArray
     .ENDIF
-done:
     pop eax                                     ; Restore eax
 endm
 
@@ -121,9 +133,9 @@ endm
 ;**************************************************
 main PROC
 _setup:
-    ListNode<0,0>
-    call WriteDec
     CreateHeap                        ; Create heap and store handle in hHeap
+    InitList                          ; Initialize the linked list
+
 _mainmenu:
     PrintMenu                         ; Print the menu
     
