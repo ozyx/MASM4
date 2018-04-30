@@ -30,6 +30,8 @@
         dwNext  DWORD 0                     ; Address to next node
     ListNode ENDS
 
+    sumOfEntryFields = SIZEOF ListNode.strLine
+
     .data
 
     
@@ -69,6 +71,7 @@
 InitList MACRO
     mov dwBytes, SIZEOF ListNode            ; Allocate memory for a ListNode
     AddNode dwBytes                         ; Call AddNode
+    mov eax, pArray
     mov head, eax                           ; Store address of first node in head
 endm
 
@@ -85,12 +88,34 @@ AddNode MACRO bytes:REQ
     pop ebx                                 ; Restore ebx
 endm
 
+PrintNode MACRO
+    mov edi, head
+    mov ebx, 00h
+display:
+    ; cmp [edi+sumOfEntryFields], ebx
+    ; je _mainmenu
+    ; call WaitMsg
+    ; add edi, 4
+    mWrite "DISPLAYING NODE: "
+    mov eax, [edi]
+    mov prevNod, eax
+    mov edx, edi
+    call WriteString
+    call Crlf
+
+    ; add edi, SIZEOF thisNode.strLine
+    ; mov edi, [edi]
+    ; mov currNod, edi
+
+    ; jmp display
+endm
+
 ;***********************
 ;    MACRO PrintMenu   *
 ; Prints the main menu *
 ;***********************
 PrintMenu MACRO
-    call Clrscr                         ; Clear the screen
+    ; call Clrscr                         ; Clear the screen
     mWriteString strHeader0             ; Print menu
     mWriteString strTotalMem            ; Print total bytes
     mWriteString strHeader1             ;
@@ -156,7 +181,7 @@ _mainmenu:
     MOV charIn, al                    ; Store user choice in charIn
 
     cmp charIn, "1"                   ; View all strings
-    je _mainmenu
+    je _print
 
     cmp charIn, "2"                   ; Add a string
     je _addString
@@ -175,6 +200,12 @@ _mainmenu:
 
     jmp _end
 
+_print:
+    call Crlf
+    ; mWrite "CURRENT NODE: "
+    PrintNode
+    jmp _mainmenu
+
 _addString:
     call Crlf                                    ; Print newline
     mWrite "Enter a selection (a - b): "         ; Prompt user
@@ -192,6 +223,13 @@ _fromKeyboard:
     mov dwLength, eax                            ; Store length in dwLength
     cmp dwLength, 0                              ; Is it an empty string?
     je _mainmenu                                 ; If so, jump back to menu
+    
+    ; push edx
+    ; mov edx, OFFSET thisNode.strLine
+    ; add edx, dwLength
+    ; mov BYTE PTR [edx], 0
+    ; pop edx
+
     AddNode dwBytes                              ; Otherwise, add a new node
     mov eax, tail                                ; Move tail to eax
     mov thisNode.dwNext, eax                     ; The current node's next-ptr will point to tail
@@ -199,8 +237,9 @@ _fromKeyboard:
     mov esi, OFFSET thisNode                     ; Move address of this node to esi
     mov edi, currNod                             ; Move currNod to edi
     
-    add edi, SIZEOF thisNode.strLine             ; Make room for new node
+    ; add edi, SIZEOF thisNode.strLine             ; Make room for new node
     INVOKE Str_copy, ADDR thisNode.strLine, edi  ; Copy the line into the new node object
+    ; add edi, SIZEOF thisNode.strLine
     mov eax, (ListNode PTR [esi]).dwNext         ; Move next node address into eax
 
     mov [edi], eax                               ; Next node address into edi
@@ -214,36 +253,4 @@ _end:
     INVOKE ExitProcess,0                ; Exit gracefully
 
 main ENDP
-
-;###################################################
-; String_length PROC
-;   Calculate length of string
-; Receives: A string
-; Returns: The length of the string in eax
-;###################################################
-String_length PROC
-x_param EQU [ebp + 8]           ; set macro for x
-        push ebp                ; save base pointer
-        mov ebp, esp            ; set ebp equal to esp
-
-        push esi                ; save stack index pointer
-        push ebx                ; save ebx
-
-        mov eax, 0              ; initialize eax to 0
-        mov ebx, x_param        ; pass our parameter
-        mov esi, 0              ; set stack index pointer to 0
-    startloop:
-        cmp BYTE ptr[ebx+esi],0 ; check if we are at the end of the string
-        je endloop              ; if so, jump to endloop
-        inc eax                 ; else, increment count
-        inc esi                 ; point to next letter
-        jmp startloop           ; loop
-    endloop:
-        pop ebx                 ; restore ebx
-        pop esi                 ; restore esi
-
-        pop ebp                 ; restore base pointer value
-        ret                     ; return -- caller must clean up the stack
-String_length ENDP
-
 END main               	        ; end program
