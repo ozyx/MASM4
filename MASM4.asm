@@ -47,19 +47,22 @@
     strHeader6   BYTE "<6> Save File",10,10,"<7> Quit",10,10,0
     strPrompt1   BYTE "Enter a selection (1 - 7): ",0
 
-    dwChoice    DWORD ?
-    hHeap      HANDLE ?
-    pArray      DWORD ?
-    dwLength    DWORD ?
-    dwFlags     DWORD HEAP_ZERO_MEMORY      ; Flags to use for HeapCreate, HeapAlloc, etc
-    dwBytes     DWORD 0                     ; Bytes to allocate memory
-    lineNum     DWORD 0
+    dwChoice     DWORD ?
+    hHeap       HANDLE ?
+    iFileHandle HANDLE ?
+    pArray       DWORD ?
+    dwLength     DWORD ?
+    dwFlags      DWORD HEAP_ZERO_MEMORY      ; Flags to use for HeapCreate, HeapAlloc, etc
+    dwBytes      DWORD 0                     ; Bytes to allocate memory
+    lineNum      DWORD 0
+    strBuffer     BYTE STRING_MAX DUP(0)
+    inputFile     BYTE "input.txt",0
 
-    head        DWORD ?                     ; Pointer to first node in list
-    tail        DWORD ?                     ; Pointer to last node in list
-    currNod     DWORD ?                     ; Pointer to the current node
-    prevNod     DWORD 0                     ; Pointer to the previous node
-    nextNod     DWORD 0                     ; Pointer to the next node
+    head          DWORD ?                     ; Pointer to first node in list
+    tail          DWORD ?                     ; Pointer to last node in list
+    currNod       DWORD ?                     ; Pointer to the current node
+    prevNod       DWORD 0                     ; Pointer to the previous node
+    nextNod       DWORD 0                     ; Pointer to the next node
 
     thisNode ListNode{}                     ; ListNode object
 
@@ -103,7 +106,7 @@ endm
 ; Prints the main menu *
 ;***********************
 PrintMenu MACRO
-    ; call Clrscr                       ; Clear the screen
+    call Clrscr                       ; Clear the screen
     mWriteString strHeader0             ; Print menu
     mWriteString strTotalMem            ; Print total bytes
     mWriteString strHeader1             ;
@@ -243,6 +246,22 @@ _fromKeyboard:
     jmp _mainmenu                                ; Go to main menu
 
 _fromFile:
+    mov edx, OFFSET inputFile
+    call OpenInputFile
+    .IF eax == INVALID_HANDLE_VALUE
+        mWrite "An error has occurred while opening input file!"
+        call WaitMsg
+    .ELSE
+        mov iFileHandle, eax                     ; Store input file handle
+        mov edx, OFFSET strBuffer                ; Store string buffer in edx
+        mov ecx, 1                               ; Read in one character from file
+        call ReadFromFile
+        ; cmp [strBuffer], 10
+        mWriteString strBuffer
+    .ENDIF
+
+
+
     jmp _mainmenu
 
 _end:
