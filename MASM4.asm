@@ -72,17 +72,16 @@
 ;*****************************
 InitList MACRO
     mov dwBytes, SIZEOF ListNode            ; Allocate memory for a ListNode
-    AddNode dwBytes                         ; Call AddNode
+    AllocNode dwBytes                       ; Call AllocNode
     mov eax, pArray                         ; Store initial address in eax
     mov head, eax                           ; Store address of first node in head
 endm
 
-;***********************
-;    MACRO AddNode     *
-; Add a new node to    *
-; the list             *
-;***********************
-AddNode MACRO bytes:REQ
+;*********************************
+;        MACRO AllocNode         *
+; Allocate memory for a new node *
+;*********************************
+AllocNode MACRO bytes:REQ
     push ebx                                ; Preserve ebx
     AllocMem bytes                          ; Allocate a certain number of bytes
     mov ebx,  pArray                        ; Move memory address to ebx
@@ -90,6 +89,10 @@ AddNode MACRO bytes:REQ
     pop ebx                                 ; Restore ebx
 endm
 
+;**********************************
+;         MACRO PrintNode         *
+; Print a single node in the list *
+;**********************************
 PrintNode MACRO
     mov eax, lineNum                        ; Prepare to print line number
     call WriteDec                           ; Print line number
@@ -106,7 +109,7 @@ endm
 ; Prints the main menu *
 ;***********************
 PrintMenu MACRO
-    call Clrscr                       ; Clear the screen
+    call Clrscr                         ; Clear the screen
     mWriteString strHeader0             ; Print menu
     mWriteString strTotalMem            ; Print total bytes
     mWriteString strHeader1             ;
@@ -123,10 +126,10 @@ endm
 ;**********************************
 CreateHeap MACRO
     push eax                                    ; Preserve eax
-    INVOKE HeapCreate, 
+    INVOKE HeapCreate,                          ; Create heap
         dwFlags, 
         HEAP_START, 
-        HEAP_MAX  ; Create heap
+        HEAP_MAX                                
     mov hHeap, eax                              ; Retrieve handle
     pop eax                                     ; Restore eax
 endm
@@ -146,6 +149,27 @@ AllocMem MACRO bytes:REQ
         mov pArray, eax                         ; Store base address in pArray
     .ENDIF
     pop eax                                     ; Restore eax
+endm
+
+;***********************************
+;          MACRO AddNode           *
+; Add the current node to the list *
+;***********************************
+AddNode MACRO
+    push eax                                     ; Preserve eax
+    AllocNode dwBytes                            ; Otherwise, add a new node
+    mov eax, tail                                ; Move tail to eax
+    mov thisNode.dwNext, eax                     ; The current node's next-ptr will point to tail
+
+    mov esi, OFFSET thisNode                     ; Move address of this node to esi
+    mov edi, currNod                             ; Move currNod to edi
+    
+    INVOKE Str_copy, ADDR thisNode.strLine, edi  ; Copy the line into the new node object
+    add edi, SIZEOF thisNode.strLine             ; Add size of strLine to edi
+    mov eax, (ListNode PTR [esi]).dwNext         ; Move next node address into eax
+
+    mov [edi], eax                               ; Next node address into edi
+    pop eax                                      ; Restore eax
 endm
 
     .code                                       ; begin code
@@ -230,19 +254,7 @@ _fromKeyboard:
     mov dwLength, eax                            ; Store length in dwLength
     cmp dwLength, 0                              ; Is it an empty string?
     je _mainmenu                                 ; If so, jump back to menu
-
-    AddNode dwBytes                              ; Otherwise, add a new node
-    mov eax, tail                                ; Move tail to eax
-    mov thisNode.dwNext, eax                     ; The current node's next-ptr will point to tail
-
-    mov esi, OFFSET thisNode                     ; Move address of this node to esi
-    mov edi, currNod                             ; Move currNod to edi
-    
-    INVOKE Str_copy, ADDR thisNode.strLine, edi  ; Copy the line into the new node object
-    add edi, SIZEOF thisNode.strLine             ; Add size of strLine to edi
-    mov eax, (ListNode PTR [esi]).dwNext         ; Move next node address into eax
-
-    mov [edi], eax                               ; Next node address into edi
+    AddNode                                      ; Add the newly created node to the list
     jmp _mainmenu                                ; Go to main menu
 
 _fromFile:
