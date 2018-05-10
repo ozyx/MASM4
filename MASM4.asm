@@ -277,15 +277,16 @@ _fromFile:
     jmp _mainmenu
 
 _deleteString:
+    push eax
     mWrite "Enter the line number to delete: "  ; Prompt user
     call ReadDec                                ; Get line number from user
     movzx eax, al                               ; Store in eax
     mov delIndex, eax                           ; Store in delIndex
     cmp delIndex, 1                             ; Check if delIndex is at least one
-    jl _mainmenu                                ; If it's less, jump to main menu
+    jl _doneDelete                              ; If it's less, jump to main menu
     mov ebx, nodeCount                          ; Store nodeCount in ebx
     cmp delIndex, ebx                           ; Compare delIndex to our number of nodes
-    jg _mainmenu                                ; if it's more than we've got, go to main menu
+    jg _doneDelete                              ; if it's more than we've got, go to main menu
     mov edi, head                               ; Move address of first node to edi
     mov ecx, 1                                  ; Move 1 to ecx
     mov prevNod, edi                            ; Store previous node in edi
@@ -317,6 +318,8 @@ _foundNode:
     INVOKE HeapFree, hHeap, dwFlags, edi        ; deallocate memory
     dec nodeCount                               ; decrement nodecount
 
+_doneDelete:
+    pop eax
     jmp _mainmenu                               ; jump to main menu
 
 _end:
