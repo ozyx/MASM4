@@ -63,6 +63,8 @@
     currNod       DWORD ?                     ; Pointer to the current node
     prevNod       DWORD 0                     ; Pointer to the previous node
     nextNod       DWORD 0                     ; Pointer to the next node
+    nodeCount     DWORD 0                     ; The number of nodes
+    delIndex      DWORD ?                     ; index to delete
 
     thisNode ListNode{}                     ; ListNode object
 
@@ -169,6 +171,7 @@ AddNode MACRO
     mov eax, (ListNode PTR [esi]).dwNext         ; Move next node address into eax
 
     mov [edi], eax                               ; Next node address into edi
+    inc nodeCount                                ; increment number of nodes
     pop eax                                      ; Restore eax
 endm
 
@@ -202,7 +205,7 @@ _mainmenu:
     je _addString
 
     cmp dwChoice, 3                   ; Delete a string
-    je _mainmenu
+    je _deleteString
 
     cmp dwChoice, 4                   ; Edit a string
     je _mainmenu
@@ -271,9 +274,31 @@ _fromFile:
         ; cmp [strBuffer], 10
         mWriteString strBuffer
     .ENDIF
+    jmp _mainmenu
 
-
-
+_deleteString:
+    mWrite "Enter the line number to delete: "  ; Prompt user
+    call ReadDec                                ; Get line number from user
+    movzx eax, al                               ; Store in eax
+    mov delIndex, eax                           ; Store in delIndex
+    cmp delIndex, 1                             ; Check if delIndex is at least one
+    jl _mainmenu                                ; If it's less, jump to main menu
+    mov ebx, nodeCount                          ; Store nodeCount in ebx
+    cmp delIndex, ebx                           ; Compare delIndex to our number of nodes
+    jg _mainmenu                                ; if it's more than we've got, go to main menu
+    mov edi, head                               ; Move address of first node to edi
+    mov ecx, 1                                  ; Move 1 to ecx
+L1:
+    cmp ecx, delIndex                           ; 
+    je _deleteDone
+    add edi, SIZEOF thisNode.strLine            ; Go to the next node in the list
+    mov edi, [edi]                              ; Dereference and store in edi
+    inc ecx
+    jmp L1
+_deleteDone:
+    mov edx, edi
+    call WriteString
+    call WaitMsg
     jmp _mainmenu
 
 _end:
