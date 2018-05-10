@@ -288,39 +288,36 @@ _deleteString:
     jg _mainmenu                                ; if it's more than we've got, go to main menu
     mov edi, head                               ; Move address of first node to edi
     mov ecx, 1                                  ; Move 1 to ecx
-    mov prevNod, edi
+    mov prevNod, edi                            ; Store previous node in edi
 L1:
-    mov eax, [edi]
-    cmp ecx, delIndex                           ; 
-    je _foundNode
-    add edi, sumOfEntryFields                   ; Go to the next node in the list
+    mov eax, [edi]                              ; Deref edi and move to eax
+    cmp ecx, delIndex                           ; Compare our nodeCount with the index to delete
+    je _foundNode                               ; If it's equal, we found our node
+    add edi, sumOfEntryFields                   ; Otherwise go to the next node in the list
     mov edi, [edi]                              ; Dereference and store in edi
     inc ecx                                     ; increment index
     jmp L1                                      ; loop again
 _foundNode:
-    mov currNod, edi
-    add edi, sumOfEntryFields
-    mov eax, [edi]
-    mov nextNod, eax
+    mov currNod, edi                            ; Store edi in currNod
+    add edi, sumOfEntryFields                   ; Add sum of entry fields to edi
+    mov eax, [edi]                              ; Deref edi and store in eax
+    mov nextNod, eax                            ; Store eax in nextNod
 
-    mov edi, currNod
-    .if(edi == head)
-        mov head, eax
+    mov edi, currNod                            ; Store currNod in edi
+    .if(edi == head)                            ; If it's first in the list
+        mov head, eax                           ; Set it as head
     .ENDIF
 
-    mov edi, prevNod
-    add edi, sumOfEntryFields
-    mov eax, nextNod
-    mov [edi],eax
+    mov edi, prevNod                            ; Store previous node in edi
+    add edi, sumOfEntryFields                   ; add sum of entry fields
+    mov eax, nextNod                            ; move nextNod to eax
+    mov [edi],eax                               ; store eax in deref node
 
-    mov edi, currNod
-    INVOKE HeapFree, hHeap, dwFlags, edi
-    dec nodeCount
+    mov edi, currNod                            ; move currNod to edi
+    INVOKE HeapFree, hHeap, dwFlags, edi        ; deallocate memory
+    dec nodeCount                               ; decrement nodecount
 
-    ; mov edx, edi                                ; this is for debugging
-    ; call WriteString
-    ; call WaitMsg
-    jmp _mainmenu
+    jmp _mainmenu                               ; jump to main menu
 
 _end:
     INVOKE HeapDestroy, hHeap                    ; Destroy the heap!!
