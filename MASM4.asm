@@ -288,17 +288,38 @@ _deleteString:
     jg _mainmenu                                ; if it's more than we've got, go to main menu
     mov edi, head                               ; Move address of first node to edi
     mov ecx, 1                                  ; Move 1 to ecx
+    mov prevNod, edi
 L1:
+    mov eax, [edi]
     cmp ecx, delIndex                           ; 
-    je _deleteDone
-    add edi, SIZEOF thisNode.strLine            ; Go to the next node in the list
+    je _foundNode
+    add edi, sumOfEntryFields                   ; Go to the next node in the list
     mov edi, [edi]                              ; Dereference and store in edi
-    inc ecx
-    jmp L1
-_deleteDone:
-    mov edx, edi
-    call WriteString
-    call WaitMsg
+    inc ecx                                     ; increment index
+    jmp L1                                      ; loop again
+_foundNode:
+    mov currNod, edi
+    add edi, sumOfEntryFields
+    mov eax, [edi]
+    mov nextNod, eax
+
+    mov edi, currNod
+    .if(edi == head)
+        mov head, eax
+    .ENDIF
+
+    mov edi, prevNod
+    add edi, sumOfEntryFields
+    mov eax, nextNod
+    mov [edi],eax
+
+    mov edi, currNod
+    INVOKE HeapFree, hHeap, dwFlags, edi
+    dec nodeCount
+
+    ; mov edx, edi                                ; this is for debugging
+    ; call WriteString
+    ; call WaitMsg
     jmp _mainmenu
 
 _end:
